@@ -289,7 +289,10 @@ public partial class View // Layout APIs
 
             PosDimSet ();
 
-            NeedsClearScreenNextIteration ();
+            if (SuperView is null)
+            {
+                NeedsClearScreenNextIteration ();
+            }
         }
     }
 
@@ -339,7 +342,10 @@ public partial class View // Layout APIs
             _y = value ?? throw new ArgumentNullException (nameof (value), @$"{nameof (Y)} cannot be null");
             PosDimSet ();
 
-            NeedsClearScreenNextIteration ();
+            if (SuperView is null)
+            {
+                NeedsClearScreenNextIteration ();
+            }
         }
     }
 
@@ -395,7 +401,7 @@ public partial class View // Layout APIs
         get => _height;
         set
         {
-            CWPPropertyHelper.ChangeProperty (this,
+            bool heightChanged = CWPPropertyHelper.ChangeProperty (this,
                                               ref _height,
                                               value,
                                               OnHeightChanging,
@@ -411,6 +417,14 @@ public partial class View // Layout APIs
                                               OnHeightChanged,
                                               HeightChanged,
                                               out Dim _);
+
+            // Only a top-level view (no SuperView) needs the whole screen cleared when it resizes; a
+            // SubView's old area is invalidated on its SuperView by SetFrame. Re-assigning the same
+            // value changes nothing and must not force a full-screen repaint either.
+            if (!heightChanged || SuperView is { })
+            {
+                return;
+            }
 
             NeedsClearScreenNextIteration ();
         }
@@ -496,7 +510,7 @@ public partial class View // Layout APIs
         get => _width;
         set
         {
-            CWPPropertyHelper.ChangeProperty (this,
+            bool widthChanged = CWPPropertyHelper.ChangeProperty (this,
                                               ref _width,
                                               value,
                                               OnWidthChanging,
@@ -512,6 +526,12 @@ public partial class View // Layout APIs
                                               OnWidthChanged,
                                               WidthChanged,
                                               out Dim _);
+
+            // See Height.
+            if (!widthChanged || SuperView is { })
+            {
+                return;
+            }
 
             NeedsClearScreenNextIteration ();
         }
