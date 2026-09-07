@@ -417,7 +417,7 @@ public partial class TreeView<T> : View, ITreeView where T : class
             field = value;
 
             OnSelectionChanged (new SelectionChangedEventArgs<T> (this, oldValue, value));
-            SetNeedsDraw ();
+            InvalidateSelectionRows (oldValue, value);
         }
     }
 

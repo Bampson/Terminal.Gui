@@ -32,7 +32,18 @@ public partial class TreeView<T>
 
         IReadOnlyCollection<Branch<T>> map = BuildLineMap ();
 
-        for (var line = 0; line < Viewport.Height; line++)
+        // Moving the selection invalidates only the rows involved (see InvalidateRow), and the framework then
+        // clears only those rows. Repaint just that band; every other row is still correct on screen.
+        var firstLine = 0;
+        int lastLine = Viewport.Height - 1;
+
+        if (TryGetNarrowedDrawRect (out Rectangle dirty))
+        {
+            firstLine = Math.Max (0, dirty.Top);
+            lastLine = Math.Min (Viewport.Height - 1, dirty.Bottom - 1);
+        }
+
+        for (int line = firstLine; line <= lastLine; line++)
         {
             int idxToRender = ScrollOffsetVertical + line;
 

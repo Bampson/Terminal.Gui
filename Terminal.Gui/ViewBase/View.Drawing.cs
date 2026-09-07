@@ -345,6 +345,30 @@ public partial class View // Drawing APIs
     }
 
     /// <summary>
+    ///     INTERNAL: Gets the viewport-relative rectangle that the current draw pass is limited to when
+    ///     <see cref="DoClearViewport"/> narrowed the clear to <see cref="NeedsDrawRect"/>. Views that paint
+    ///     row by row (e.g. <see cref="TreeView{T}"/>) use this to repaint only the rows that were invalidated.
+    /// </summary>
+    /// <param name="viewportLocal">The dirty rectangle in viewport-relative coordinates.</param>
+    /// <returns>
+    ///     <see langword="true"/> if the draw is narrowed; <see langword="false"/> if the whole viewport was cleared
+    ///     and must be repainted.
+    /// </returns>
+    internal bool TryGetNarrowedDrawRect (out Rectangle viewportLocal)
+    {
+        viewportLocal = Rectangle.Empty;
+
+        if (!CanNarrowClearToNeedsDrawRect (out _))
+        {
+            return false;
+        }
+
+        viewportLocal = Rectangle.Intersect (NeedsDrawRect, Viewport with { Location = Point.Empty });
+
+        return !viewportLocal.IsEmpty;
+    }
+
+    /// <summary>
     ///     Called when the <see cref="Viewport"/> is to be cleared.
     /// </summary>
     /// <returns><see langword="true"/> to stop further clearing.</returns>

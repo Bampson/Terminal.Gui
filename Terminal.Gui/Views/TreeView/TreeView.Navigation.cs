@@ -26,6 +26,8 @@ public partial class TreeView<T>
     public void AdjustSelection (int offset, bool expandSelection = false)
     {
         // if it is not a shift click, or we don't allow multi select
+        bool hadRegions = _multiSelectedRegions.Count > 0;
+
         if (!expandSelection || !MultiSelect)
         {
             _multiSelectedRegions.Clear ();
@@ -76,7 +78,48 @@ public partial class TreeView<T>
 
         UpdateCursor ();
 
-        SetNeedsDraw ();
+        // The rows whose selection state changed were invalidated by the SelectedObject setter, and any scroll by
+        // EnsureVisible. Only a multi-selection region can change the look of other rows.
+        if (hadRegions || (expandSelection && MultiSelect))
+        {
+            SetNeedsDraw ();
+        }
+    }
+
+    /// <summary>
+    ///     Marks the rows showing <paramref name="oldObject"/> and <paramref name="newObject"/> as needing to be
+    ///     redrawn. While a multi-selection is active the whole viewport is invalidated instead, because the
+    ///     multi-selection highlight can span other rows.
+    /// </summary>
+    private void InvalidateSelectionRows (T? oldObject, T? newObject)
+    {
+        if (MultiSelect && _multiSelectedRegions.Count > 0)
+        {
+            SetNeedsDraw ();
+
+            return;
+        }
+
+        InvalidateRow (oldObject);
+        InvalidateRow (newObject);
+    }
+
+    /// <summary>Marks the row showing <paramref name="model"/> as needing to be redrawn, when it is visible.</summary>
+    private void InvalidateRow (T? model)
+    {
+        if (model is null)
+        {
+            return;
+        }
+
+        int? row = GetObjectRow (model);
+
+        if (row is null || row < 0 || row >= Viewport.Height)
+        {
+            return;
+        }
+
+        SetNeedsDraw (new Rectangle (0, row.Value, Viewport.Width, 1));
     }
 
     /// <summary>Moves the selection to the last child in the currently selected level.</summary>
@@ -454,9 +497,9 @@ public partial class TreeView<T>
             return;
         }
 
+        // The SelectedObject setter invalidates the rows involved; EnsureVisible invalidates everything if it scrolls.
         SelectedObject = toSelect;
         EnsureVisible (toSelect);
-        SetNeedsDraw ();
     }
 
     /// <summary>Changes the <see cref="SelectedObject"/> to the last object in the tree and scrolls so that it is visible.</summary>
